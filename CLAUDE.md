@@ -13,21 +13,26 @@ A mobile-first daily puzzle hub app — a collection of polished daily games ins
 - **Styling**: Tailwind CSS v4 (CSS-first config in `index.css`)
 - **Routing**: React Router DOM v7
 - **PWA**: vite-plugin-pwa
-- **Storage**: localStorage (per-game progress + stats)
-- **No backend** — all client-side, daily puzzles rotate via deterministic day-index
+- **Auth + DB**: Supabase (free tier) — email/password auth, Postgres for cloud stats
+- **Storage**: localStorage (primary) + Supabase cloud sync when logged in
+- **Repo**: https://github.com/jonathanfangon/gamehub
 
 ## Architecture
 
 ```
 src/
-  App.tsx              — route definitions (all 5 games + stats)
+  App.tsx              — route definitions (all 5 games + stats + auth)
   index.css            — theme colors, animations
-  main.tsx             — entry point with BrowserRouter
+  main.tsx             — entry point with BrowserRouter + AuthProvider
+  vite-env.d.ts        — Vite env type declarations
   components/          — shared UI (Header, Modal, StatsModal, Keyboard, GameIcon, Tile)
   lib/
-    storage.ts         — localStorage helpers (progress, stats per GameId)
+    storage.ts         — localStorage helpers + auto cloud sync on saveStats
     dailyPuzzle.ts     — getTodayKey(), getDayIndex(), pickPuzzle() (epoch: 2026-06-17)
     dates.ts           — date formatting
+    supabase.ts        — Supabase client init (reads VITE_SUPABASE_URL/KEY from env)
+    auth.tsx           — AuthProvider context + useAuth hook (email/password)
+    cloudSync.ts       — push/pull/sync stats between localStorage and Supabase
   games/
     wordguess/         — Word Guess (Wordle clone) ✅
     groups/            — Groups (Connections) ✅ + shared useConnectionsGame hook
@@ -42,7 +47,8 @@ src/
     nbatrivia/         — 10 sets of 5 questions (50 total)
   pages/
     Hub.tsx            — game cards, status badges, streak flames, stats icon
-    Stats.tsx          — overview + per-game stat cards with win rings & distributions
+    Stats.tsx          — overview + per-game stat cards + account section (sign in/out)
+    Auth.tsx           — sign in / sign up page (email + password)
     Placeholder.tsx    — no longer used (all games built)
 ```
 
@@ -115,6 +121,27 @@ src/
 - `Modal` — backdrop click-to-close + animated card
 - `Header` — back-to-hub button + centered title + stats icon (hub only)
 - CSS animations: flipIn, popIn, headShake, bounceIn, fadeIn, groupReveal, tileShrink, modalIn
+
+## Auth & Cloud Sync
+
+- **Supabase** free tier: email/password auth, Postgres database
+- **AuthProvider** wraps the app in `main.tsx`, provides `useAuth()` hook
+- **Cloud sync**: `saveStats()` in storage.ts auto-triggers a background push to Supabase when user is logged in
+- **On login**: pulls cloud stats, merges with local (whichever has more played wins), then pushes back
+- **Without account**: app works fully offline with localStorage only
+- **Database**: single `user_stats` table with RLS (users can only access their own rows)
+  - Schema: `(user_id, game_id)` PK, `stats` jsonb, `progress` jsonb, `updated_at`
+  - Migration SQL in `supabase/schema.sql`
+- **Env vars** needed: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env`
+  - Template in `.env.example`
+- **Header**: shows user avatar (first letter of email) when logged in, person icon when not
+- **Stats page**: shows account section at top — sign in prompt or email + sign out button
+
+### Supabase Setup Steps (for new environment)
+1. Create free project at supabase.com
+2. Copy project URL and anon key into `.env`
+3. Run `supabase/schema.sql` in the Supabase SQL Editor
+4. Enable email auth in Supabase Auth settings (enabled by default)
 
 ## Design Principles
 - Mobile-first, max-width 430px content area

@@ -38,6 +38,18 @@ export function getStats(game: GameId): GameStats {
 
 export function saveStats(game: GameId, stats: GameStats): void {
   localStorage.setItem(storageKey(game, 'stats'), JSON.stringify(stats))
+  queueCloudSync(game)
+}
+
+function queueCloudSync(game: GameId) {
+  import('./supabase').then(({ supabase }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return
+      import('./cloudSync').then(({ syncGameToCloud }) => {
+        syncGameToCloud(session.user.id, game)
+      })
+    })
+  }).catch(() => {})
 }
 
 export function isTodayComplete(game: GameId, todayKey: string): boolean {

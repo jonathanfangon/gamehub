@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { GameIcon } from '../components/GameIcon'
 import { type GameId, getStats, type GameStats } from '../lib/storage'
+import { useAuth } from '../lib/auth'
 
 interface GameInfo {
   id: GameId
@@ -144,12 +146,56 @@ function OverviewStats() {
   )
 }
 
+function AccountSection() {
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  if (!user) {
+    return (
+      <button
+        onClick={() => navigate('/auth')}
+        className="w-full mb-4 p-3 rounded-xl border border-border bg-bg flex items-center justify-between"
+      >
+        <div>
+          <p className="font-semibold text-[14px] text-text">Sign in to sync</p>
+          <p className="text-[12px] text-text-secondary">Save stats across devices</p>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    )
+  }
+
+  return (
+    <div className="mb-4 p-3 rounded-xl border border-border bg-bg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-[32px] h-[32px] rounded-full bg-correct flex items-center justify-center text-white text-[14px] font-bold">
+          {user.email?.[0].toUpperCase()}
+        </div>
+        <div>
+          <p className="font-semibold text-[14px] text-text">{user.email}</p>
+          <p className="text-[12px] text-correct">Synced</p>
+        </div>
+      </div>
+      <button
+        onClick={signOut}
+        className="text-[13px] text-text-secondary font-medium px-3 py-1.5 rounded-full border border-border
+          active:bg-bg-secondary transition-colors"
+      >
+        Sign Out
+      </button>
+    </div>
+  )
+}
+
 export function Stats() {
   return (
     <div className="flex flex-col min-h-dvh">
       <Header title="Your Stats" />
 
       <div className="flex-1 px-4 pt-5 pb-8 max-w-[430px] mx-auto w-full">
+        <AccountSection />
         <OverviewStats />
 
         <div className="flex flex-col gap-3">
