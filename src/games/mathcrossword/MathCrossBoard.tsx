@@ -16,7 +16,7 @@ const cellStateStyles: Record<string, string> = {
   given: 'bg-bg-secondary border-border-active text-text',
   editing: 'bg-bg border-border-active text-text',
   correct: 'bg-correct/15 border-correct text-correct',
-  incorrect: 'bg-[#ff4444]/15 border-[#ff4444] text-[#ff4444]',
+  incorrect: 'bg-[error]/15 border-[error] text-[error]',
 }
 
 function OperatorCell({ op }: { op: Operator }) {
@@ -39,7 +39,7 @@ function ResultCell({ value, satisfied }: { value: number; satisfied: boolean | 
   const color = satisfied === true
     ? 'text-correct font-bold'
     : satisfied === false
-      ? 'text-[#ff4444] font-bold'
+      ? 'text-[error] font-bold'
       : 'text-text font-bold'
 
   return (

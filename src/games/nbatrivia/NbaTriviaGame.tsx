@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Header } from '../../components/Header'
 import { StatsModal } from '../../components/StatsModal'
+import { Toast, PointsToast } from '../../components/Toast'
+import { Confetti } from '../../components/Confetti'
 import { useNbaTrivia } from './useNbaTrivia'
 import { getStats } from '../../lib/storage'
 
@@ -22,7 +24,7 @@ function ChoiceButton({ label, index, selected, correctIndex, revealed, animatin
     if (isCorrect) {
       style = 'bg-correct text-white border-correct'
     } else if (isThis && !isCorrect) {
-      style = 'bg-[#ff4444] text-white border-[#ff4444]'
+      style = 'bg-error text-white border-error'
     } else {
       style = 'bg-bg-secondary text-text-secondary border-border opacity-60'
     }
@@ -60,7 +62,7 @@ function ProgressDots({ total, current, allRevealed, allAnswers, correctAnswers 
 
         let color = 'bg-border'
         if (answered) {
-          color = isCorrect ? 'bg-correct' : 'bg-[#ff4444]'
+          color = isCorrect ? 'bg-correct' : 'bg-error'
         } else if (isActive) {
           color = 'bg-text'
         }
@@ -83,17 +85,16 @@ export function NbaTriviaGame() {
   const [showStats, setShowStats] = useState(false)
   const stats = getStats('nbatrivia')
   const showStatsButton = game.status === 'finished' && !showStats
+  const showConfetti = game.status === 'finished' && game.score >= 3
 
   return (
     <div className="flex flex-col min-h-dvh">
       <Header title="NBA Trivia" />
+      <Confetti trigger={showConfetti} />
 
       <div className="flex-1 flex flex-col items-center max-w-[430px] mx-auto w-full relative">
-        {game.toastMessage && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-text text-bg px-4 py-2 rounded-lg text-sm font-bold shadow-lg animate-[fadeIn_150ms_ease]">
-            {game.toastMessage}
-          </div>
-        )}
+        <Toast message={game.toastMessage} />
+        <PointsToast amount={game.pointsAwarded} />
 
         <div className="w-full pt-4 px-4 mb-2">
           <div className="flex items-center justify-between mb-3">
@@ -114,23 +115,25 @@ export function NbaTriviaGame() {
         </div>
 
         <div className="flex-1 flex flex-col justify-center w-full px-4">
-          <h2 className="text-[18px] font-bold text-center mb-6 leading-snug">
-            {game.question.question}
-          </h2>
+          <div key={game.currentQuestion} className="animate-[slideInRight_250ms_ease-out]">
+            <h2 className="text-[18px] font-bold text-center mb-6 leading-snug">
+              {game.question.question}
+            </h2>
 
-          <div className="flex flex-col gap-2.5">
-            {game.question.choices.map((choice, i) => (
-              <ChoiceButton
-                key={`${game.currentQuestion}-${i}`}
-                label={choice}
-                index={i}
-                selected={game.answer}
-                correctIndex={game.question.answer}
-                revealed={game.revealed}
-                animating={game.animatingChoice !== null}
-                onSelect={game.selectAnswer}
-              />
-            ))}
+            <div className="flex flex-col gap-2.5">
+              {game.question.choices.map((choice, i) => (
+                <ChoiceButton
+                  key={`${game.currentQuestion}-${i}`}
+                  label={choice}
+                  index={i}
+                  selected={game.answer}
+                  correctIndex={game.question.answer}
+                  revealed={game.revealed}
+                  animating={game.animatingChoice !== null}
+                  onSelect={game.selectAnswer}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -150,8 +153,8 @@ export function NbaTriviaGame() {
           )}
 
           {game.status === 'finished' && (
-            <div className="text-center mb-4">
-              <p className="text-lg font-bold mb-1">
+            <div className="text-center mb-4 animate-[countUp_400ms_ease-out]">
+              <p className="text-2xl font-bold mb-1">
                 {game.score >= 4 ? 'Amazing!' : game.score >= 3 ? 'Nice job!' : game.score >= 2 ? 'Not bad!' : 'Better luck tomorrow!'}
               </p>
               <p className="text-sm text-text-secondary">

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { pickPuzzle, getTodayKey } from '../../lib/dailyPuzzle'
 import { getProgress, saveProgress, getStats, saveStats, type GameId } from '../../lib/storage'
+import { calculatePoints, addPoints } from '../../lib/points'
 import { PUZZLES } from '../../data/wordguess/puzzles'
 import { VALID_WORDS } from '../../data/wordguess/words'
 
@@ -98,6 +99,7 @@ export function useWordGuess() {
   })
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [pointsAwarded, setPointsAwarded] = useState<number | null>(null)
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg)
@@ -180,6 +182,17 @@ export function useWordGuess() {
 
       if (won || lost) {
         finishGame(prev.guesses, won)
+        const stats = getStats(GAME_ID)
+        const { amount, reason } = calculatePoints(
+          GAME_ID,
+          won ? 'won' : 'lost',
+          { guesses: prev.guesses.length, streak: stats.currentStreak }
+        )
+        if (amount > 0) {
+          addPoints(GAME_ID, amount, reason)
+          setPointsAwarded(amount)
+          setTimeout(() => setPointsAwarded(null), 2000)
+        }
         if (won) {
           const messages = ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew']
           showToast(messages[prev.guesses.length - 1])
@@ -230,6 +243,7 @@ export function useWordGuess() {
     revealingRow: state.revealingRow,
     shakeRow: state.shakeRow,
     toastMessage,
+    pointsAwarded,
     keyStates,
     maxGuesses: MAX_GUESSES,
     wordLength: WORD_LENGTH,

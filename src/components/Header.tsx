@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { PointsBadge } from './PointsBadge'
 
 interface HeaderProps {
   title?: string
@@ -26,7 +27,7 @@ export function Header({ title }: HeaderProps) {
         </button>
       ) : (
         <button
-          onClick={() => navigate(user ? '/stats' : '/auth')}
+          onClick={() => navigate(user ? '/settings' : '/auth')}
           className="text-text-secondary active:text-text transition-colors"
           aria-label={user ? 'Profile' : 'Sign in'}
         >
@@ -46,17 +47,30 @@ export function Header({ title }: HeaderProps) {
         {title ?? 'Daily Puzzle Hub'}
       </h1>
       {isHub ? (
-        <button
-          onClick={() => navigate('/stats')}
-          className="text-text-secondary active:text-text transition-colors"
-          aria-label="View stats"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="12" width="4" height="9" rx="1" />
-            <rect x="10" y="7" width="4" height="14" rx="1" />
-            <rect x="17" y="3" width="4" height="18" rx="1" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-3">
+          <PointsBadge onClick={() => navigate('/shop')} />
+          <button
+            onClick={() => navigate('/stats')}
+            className="text-text-secondary active:text-text transition-colors"
+            aria-label="View stats"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="12" width="4" height="9" rx="1" />
+              <rect x="10" y="7" width="4" height="14" rx="1" />
+              <rect x="17" y="3" width="4" height="18" rx="1" />
+            </svg>
+          </button>
+          <button
+            onClick={() => navigate('/settings')}
+            className="text-text-secondary active:text-text transition-colors"
+            aria-label="Settings"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          </button>
+        </div>
       ) : (
         <div className="w-[60px]" />
       )}

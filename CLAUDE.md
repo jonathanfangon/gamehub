@@ -4,7 +4,7 @@
 
 ## What This Is
 
-A mobile-first daily puzzle hub app — a collection of polished daily games inspired by NYT Games. Built as a PWA so it feels native on phones. Each game has a new puzzle daily, tracks stats/streaks, and supports share text.
+A mobile-first daily puzzle hub app — a collection of polished daily games inspired by NYT Games. Built as a PWA so it feels native on phones. Each game has a new puzzle daily, tracks stats/streaks, and supports share text. Features a points system and unlockable themes/customizations.
 
 ## Tech Stack
 
@@ -21,18 +21,31 @@ A mobile-first daily puzzle hub app — a collection of polished daily games ins
 
 ```
 src/
-  App.tsx              — route definitions (all 5 games + stats + auth)
-  index.css            — theme colors, animations
-  main.tsx             — entry point with BrowserRouter + AuthProvider
+  App.tsx              — route definitions (all 5 games + stats + auth + shop + settings)
+  index.css            — theme colors, 14+ animations, reduce-motion support
+  main.tsx             — entry point with BrowserRouter + AuthProvider + ThemeProvider
   vite-env.d.ts        — Vite env type declarations
-  components/          — shared UI (Header, Modal, StatsModal, Keyboard, GameIcon, Tile)
+  components/
+    Header.tsx         — back button, title, points badge, stats/settings icons
+    Modal.tsx          — backdrop click-to-close + animated card
+    StatsModal.tsx     — reusable stats display with share/clipboard button
+    Keyboard.tsx       — QWERTY keyboard for Word Guess
+    GameIcon.tsx       — custom SVG icons per game
+    Tile.tsx           — reusable tile component
+    Toast.tsx          — shared toast + points float animation
+    Confetti.tsx       — canvas confetti burst on game wins
+    PointsBadge.tsx    — points display (coin icon + balance)
   lib/
     storage.ts         — localStorage helpers + auto cloud sync on saveStats
     dailyPuzzle.ts     — getTodayKey(), getDayIndex(), pickPuzzle() (epoch: 2026-06-17)
     dates.ts           — date formatting
     supabase.ts        — Supabase client init (reads VITE_SUPABASE_URL/KEY from env)
     auth.tsx           — AuthProvider context + useAuth hook (email/password)
-    cloudSync.ts       — push/pull/sync stats between localStorage and Supabase
+    cloudSync.ts       — push/pull/sync stats + rewards between localStorage and Supabase
+    themes.ts          — 7 theme presets, tile skins, group palettes definitions
+    themeContext.tsx    — ThemeProvider, useTheme() hook, runtime CSS var switching
+    points.ts          — points system: earn, spend, unlock items, cloud sync
+    preferences.ts     — user preferences (theme, tileSkin, groupPalette, reduceMotion)
   games/
     wordguess/         — Word Guess (Wordle clone) ✅
     groups/            — Groups (Connections) ✅ + shared useConnectionsGame hook
@@ -46,10 +59,11 @@ src/
     mathcrossword/     — 10 verified unique-digit puzzles
     nbatrivia/         — 10 sets of 5 questions (50 total)
   pages/
-    Hub.tsx            — game cards, status badges, streak flames, stats icon
-    Stats.tsx          — overview + per-game stat cards + account section (sign in/out)
+    Hub.tsx            — game cards with staggered animations, status pills, countdown timer
+    Stats.tsx          — overview + per-game stat cards + account section
     Auth.tsx           — sign in / sign up page (email + password)
-    Placeholder.tsx    — no longer used (all games built)
+    Shop.tsx           — rewards shop: unlock themes, tile skins, group palettes
+    Settings.tsx       — theme picker, reduce motion toggle, account, customize links
 ```
 
 ## Game Status — ALL 5 COMPLETE
@@ -57,8 +71,10 @@ src/
 ### Word Guess ✅
 - Wordle clone: guess 5-letter word in 6 tries
 - Flip animations, keyboard with color states, shake on invalid
+- **Win celebration**: confetti burst + staggered bounce on winning row
 - Daily puzzle from 7-puzzle pool, valid word checking
 - Stats modal (played, win%, streaks, distribution), share text
+- Points awarded on completion (100–15 pts by guess count)
 
 ### Groups ✅
 - Connections-style: sort 16 words into 4 color-coded groups
@@ -66,6 +82,7 @@ src/
 - Select 4 words, submit guess; "One away!" toast
 - 4 mistakes allowed, auto-reveal remaining on loss
 - Tile animations (pop select, shrink correct, shake wrong, group reveal)
+- **Confetti on win**, points awarded (80–20 pts by mistakes)
 - 12 hand-crafted puzzles, daily rotation
 - Stats + share text with emoji grid
 - Game logic extracted into reusable `useConnectionsGame` hook (shared with NBA Groups)
@@ -74,7 +91,7 @@ src/
 - Same mechanics as Groups but NBA-themed categories
 - Reuses `GroupsBoard` component and `useConnectionsGame` hook
 - 10 NBA-themed puzzles (shot types, player names, team names, basketball terms)
-- Categories designed with cross-group ambiguity for challenge
+- Confetti + points on win
 
 ### Math Cross ✅
 - 3x3 number grid using digits 1-9 (each exactly once)
@@ -82,60 +99,101 @@ src/
 - **Difficulty levels**: Easy (5 given), Medium (3 given), Hard (1 given)
 - Segmented difficulty selector, preference saved in localStorage
 - Number pad shows used/available digits (used numbers greyed out + strikethrough)
-- Keyboard support (1-9, backspace)
 - Check button with correct/incorrect cell highlighting (green/red)
 - Row/column result indicators turn green when satisfied
-- 10 verified puzzles (all equations confirmed correct, all use digits 1-9 exactly once)
-- Stats: distribution tracks by difficulty level
+- **Confetti on win**, points awarded (30/50/80 pts by difficulty)
+- 10 verified puzzles, stats distribution tracks by difficulty level
 
 ### NBA Trivia ✅
 - 5 multiple-choice NBA questions per day
+- **Slide transitions** between questions (slideInRight animation)
 - Animated answer reveal (correct = green, wrong = red, others dim)
 - Progress dots showing answered/current/unanswered
-- Score tracking (X/5), end-of-game summary message
-- Auto-advance after reveal, navigate via progress dots
+- **Score reveal animation** (countUp) on finish
+- Confetti on 3+ correct, points awarded (75–10 pts by score)
 - 10 question sets (50 total), daily rotation
-- Stats: win = 3+ correct, distribution tracks score
+
+## Points & Rewards System
+
+### Earning Points
+- **Word Guess**: 100/80/60/40/25/15 pts (by guess count 1-6)
+- **Groups / NBA Groups**: 80/60/40/20 pts (by 0-3 mistakes)
+- **Math Cross**: 30/50/80 pts (easy/medium/hard)
+- **NBA Trivia**: 75/50/30/10 pts (by score 5-2)
+- **Streak bonus**: +10 pts per streak day beyond 1
+
+### Unlockable Items
+| Category | Items | Costs |
+|----------|-------|-------|
+| Themes | Light (free), Dark (free), Ocean (150), Sunset (200), Forest (200), Midnight (250), Sakura (300) |
+| Tile Skins | Classic (free), Rounded (100), Neon (200) |
+| Group Palettes | Classic (free), Pastel (150), Electric (250) |
+
+### Persistence
+- Points state (`puzzlehub:points`): total, balance, last 50 history entries
+- Unlocked items (`puzzlehub:unlocked`): themes[], tileSkins[], palettes[]
+- Cloud synced via `game_id = '_rewards'` row in existing `user_stats` table
+
+## Theme System
+- 7 color themes (2 free, 5 unlockable)
+- Runtime CSS variable override via `ThemeProvider`
+- Smooth 300ms transition when switching themes
+- Each theme defines all 18+ CSS variables (bg, text, border, game colors, etc.)
+- `useTheme()` hook: `{ themeId, setTheme, currentTheme, reduceMotion, setReduceMotion }`
+- Reduce motion support: `.reduce-motion` class disables all animations
 
 ## Hub Features
-- Game cards with status (Play / In Progress / Completed)
-- Flame streak badges on each game card showing current streak
-- Stats bar chart icon in header → navigates to /stats page
+- Game cards with staggered fadeIn entrance animations (60ms offset per card)
+- Status pills: "✓ Completed" (green bg), "In Progress" (amber bg), "Play" (gray bg)
+- Flame streak badges on each game card
+- Points badge in header → navigates to /shop
+- Settings gear icon → /settings
+- Stats icon → /stats
+- "+X pts today" banner when points earned
+- Countdown timer to next puzzle (shows after any game completed)
 - Combined streak counter at bottom
-- Game icons: custom SVG per game (word tiles, color grid, basketball, math grid, question mark)
 
 ## Stats Page (`/stats`)
-- Overview section: total played, overall win rate, combined streak, best single streak
-- Per-game cards with:
-  - Circular SVG win-rate ring (color-coded per game)
-  - Played / Streak / Best stats
-  - Distribution bar chart (guess count for WordGuess/Groups, difficulty for MathCross, score for Trivia)
-  - "No games played yet" state for unplayed games
+- Account section (sign in prompt or email + sign out)
+- Overview: total played, win rate, combined streak, best single streak
+- Per-game cards: SVG win-rate ring, played/streak/best, distribution chart
+
+## Shop Page (`/shop`)
+- Points balance display at top
+- Themes section: 2-column grid, color swatches, unlock/apply buttons
+- Tile Skins section: preview tiles with skin styles applied
+- Group Palettes section: preview color dots
+- Lock/unlock state, insufficient points messaging
+
+## Settings Page (`/settings`)
+- Account section (sign in/out)
+- Theme quick-switch (unlocked themes only) with "Get more →" link
+- Reduce motion toggle
+- Customize → Shop link
 
 ## Shared Infrastructure
 - `GameId` type: `'wordguess' | 'groups' | 'nbagroups' | 'mathcrossword' | 'nbatrivia'`
 - `storage.ts` — getProgress/saveProgress/getStats/saveStats/isTodayComplete/isTodayStarted
 - `dailyPuzzle.ts` — deterministic daily puzzle selection from pool
-- `useConnectionsGame` — shared hook for Groups + NBA Groups (takes gameId, puzzles, shareLabel)
-- `StatsModal` — reusable stats display with share/clipboard button
-- `Modal` — backdrop click-to-close + animated card
-- `Header` — back-to-hub button + centered title + stats icon (hub only)
-- CSS animations: flipIn, popIn, headShake, bounceIn, fadeIn, groupReveal, tileShrink, modalIn
+- `useConnectionsGame` — shared hook for Groups + NBA Groups
+- `Toast` + `PointsToast` — shared toast components used by all games
+- `Confetti` — canvas confetti triggered on game wins
+- `PointsBadge` — points display in header
+- Page transitions: fadeIn animation keyed by route pathname
+- CSS animations (14+): flipIn, popIn, headShake, bounceIn, fadeIn, groupReveal, tileShrink, modalIn, slideInRight, slideOutLeft, celebrationBounce, countUp, shimmer, pointsFloat, pageIn
 
 ## Auth & Cloud Sync
 
 - **Supabase** free tier: email/password auth, Postgres database
 - **AuthProvider** wraps the app in `main.tsx`, provides `useAuth()` hook
-- **Cloud sync**: `saveStats()` in storage.ts auto-triggers a background push to Supabase when user is logged in
-- **On login**: pulls cloud stats, merges with local (whichever has more played wins), then pushes back
+- **Cloud sync**: `saveStats()` auto-triggers background push; rewards sync via `pushRewardsToCloud`
+- **On login**: pulls cloud stats + rewards, merges with local, then pushes back
 - **Without account**: app works fully offline with localStorage only
 - **Database**: single `user_stats` table with RLS (users can only access their own rows)
   - Schema: `(user_id, game_id)` PK, `stats` jsonb, `progress` jsonb, `updated_at`
+  - `game_id = '_rewards'` stores points + unlocked items
   - Migration SQL in `supabase/schema.sql`
 - **Env vars** needed: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env`
-  - Template in `.env.example`
-- **Header**: shows user avatar (first letter of email) when logged in, person icon when not
-- **Stats page**: shows account section at top — sign in prompt or email + sign out button
 
 ### Supabase Setup Steps (for new environment)
 1. Create free project at supabase.com
@@ -148,6 +206,7 @@ src/
 - Touch-optimized (active:scale, no hover-dependent UI)
 - Safe area insets for notch devices (env() padding on #root)
 - Daily puzzle model — one puzzle per day, progress persists in localStorage
-- Polished animations on every interaction
+- Polished animations on every interaction (with reduce-motion support)
+- Points reward loop: play games → earn points → unlock customizations
 - Share text generation for social sharing after completion
-- Each game follows same pattern: useGameHook → Board component → Game wrapper with header/toast/stats
+- Each game follows same pattern: useGameHook → Board component → Game wrapper with header/toast/confetti/stats

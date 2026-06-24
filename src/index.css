@@ -11,6 +11,9 @@
   --color-correct: #6aaa64;
   --color-present: #c9b458;
   --color-absent: #787c7e;
+  --color-error: #ff4444;
+  --color-accent: #4a90d9;
+  --color-surface: #ffffff;
 
   --color-group-yellow: #f9df6d;
   --color-group-green: #a0c35a;
@@ -45,6 +48,18 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+.theme-transition,
+.theme-transition * {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease !important;
+}
+
+.reduce-motion,
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 @keyframes modalIn {
@@ -96,4 +111,43 @@ body {
 @keyframes tileShrink {
   0% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(0.7); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-30px); }
+}
+
+@keyframes celebrationBounce {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-12px); }
+  50% { transform: translateY(0); }
+  70% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px) scale(0.8); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pointsFloat {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  70% { opacity: 1; transform: translateY(-24px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.9); }
+}
+
+@keyframes pageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { pickPuzzle, getTodayKey, getDayIndex } from '../../lib/dailyPuzzle'
 import { getProgress, saveProgress, getStats, saveStats, type GameId } from '../../lib/storage'
+import { calculatePoints, addPoints } from '../../lib/points'
 import { PUZZLES, type Operator, type MathDifficulty } from '../../data/mathcrossword/puzzles'
 
 const GAME_ID: GameId = 'mathcrossword'
@@ -96,6 +97,7 @@ export function useMathCross() {
   }, [state.cells])
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [pointsAwarded, setPointsAwarded] = useState<number | null>(null)
 
   const showToast = useCallback((msg: string, duration = 1500) => {
     setToastMessage(msg)
@@ -191,6 +193,18 @@ export function useMathCross() {
         stats.distribution[key] = (stats.distribution[key] ?? 0) + 1
         saveStats(GAME_ID, stats)
         persist(prev.cells, 'won', true, prev.difficulty)
+
+        const diffIdx = prev.difficulty === 'easy' ? 0 : prev.difficulty === 'medium' ? 1 : 2
+        const { amount, reason } = calculatePoints(
+          GAME_ID, 'won',
+          { difficulty: diffIdx, streak: stats.currentStreak }
+        )
+        if (amount > 0) {
+          addPoints(GAME_ID, amount, reason)
+          setPointsAwarded(amount)
+          setTimeout(() => setPointsAwarded(null), 2000)
+        }
+
         showToast('Perfect!')
         return { ...prev, status: 'won' as GameStatus, checked: true, selectedCell: null }
       }
@@ -261,6 +275,7 @@ export function useMathCross() {
     todayKey: state.todayKey,
     puzzle,
     usedNumbers,
+    pointsAwarded,
     getCellInfo,
     getRowEquation,
     getColEquation,

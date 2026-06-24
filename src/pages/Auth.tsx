@@ -81,7 +81,7 @@ export function Auth() {
             />
 
             {error && (
-              <p className="text-[13px] text-[#ff4444] text-center">{error}</p>
+              <p className="text-[13px] text-error text-center">{error}</p>
             )}
             {success && (
               <p className="text-[13px] text-correct text-center">{success}</p>

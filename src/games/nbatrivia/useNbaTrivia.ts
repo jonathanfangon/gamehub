@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { pickPuzzle, getTodayKey, getDayIndex } from '../../lib/dailyPuzzle'
 import { getProgress, saveProgress, getStats, saveStats, type GameId } from '../../lib/storage'
+import { calculatePoints, addPoints } from '../../lib/points'
 import { PUZZLES } from '../../data/nbatrivia/puzzles'
 
 const GAME_ID: GameId = 'nbatrivia'
@@ -54,6 +55,7 @@ export function useNbaTrivia() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [animatingChoice, setAnimatingChoice] = useState<number | null>(null)
+  const [pointsAwarded, setPointsAwarded] = useState<number | null>(null)
 
   const showToast = useCallback((msg: string, duration = 1500) => {
     setToastMessage(msg)
@@ -108,6 +110,16 @@ export function useNbaTrivia() {
         const key = String(newScore)
         stats.distribution[key] = (stats.distribution[key] ?? 0) + 1
         saveStats(GAME_ID, stats)
+
+        const { amount, reason } = calculatePoints(
+          GAME_ID, won ? 'won' : 'lost',
+          { score: newScore, streak: stats.currentStreak }
+        )
+        if (amount > 0) {
+          addPoints(GAME_ID, amount, reason)
+          setPointsAwarded(amount)
+          setTimeout(() => setPointsAwarded(null), 2000)
+        }
       }
 
       setState((prev) => ({
@@ -161,6 +173,7 @@ export function useNbaTrivia() {
     score: state.score,
     status: state.status,
     toastMessage,
+    pointsAwarded,
     animatingChoice,
     todayKey: state.todayKey,
     correctAnswers: puzzle.questions.map((q) => q.answer),

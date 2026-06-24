@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { EvaluatedGuess } from './useWordGuess'
+import type { EvaluatedGuess, GameStatus } from './useWordGuess'
 
 interface WordGuessBoardProps {
   guesses: EvaluatedGuess[]
@@ -8,6 +8,7 @@ interface WordGuessBoardProps {
   wordLength: number
   revealingRow: number | null
   shakeRow: boolean
+  status: GameStatus
   onRevealComplete: () => void
 }
 
@@ -24,10 +25,12 @@ export function WordGuessBoard({
   wordLength,
   revealingRow,
   shakeRow,
+  status,
   onRevealComplete,
 }: WordGuessBoardProps) {
   const revealTimerRef = useRef<ReturnType<typeof setTimeout>>()
   const [revealedCells, setRevealedCells] = useState<Set<string>>(new Set())
+  const [celebrateRow, setCelebrateRow] = useState<number | null>(null)
 
   useEffect(() => {
     if (revealingRow === null) return
@@ -55,12 +58,22 @@ export function WordGuessBoard({
     }
   }, [revealingRow, onRevealComplete, wordLength])
 
+  useEffect(() => {
+    if (status === 'won' && guesses.length > 0) {
+      const timer = setTimeout(() => {
+        setCelebrateRow(guesses.length - 1)
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [status, guesses.length])
+
   const rows: React.ReactNode[] = []
 
   for (let r = 0; r < maxGuesses; r++) {
     const isRevealing = revealingRow === r
     const isCurrentRow = r === guesses.length && revealingRow === null
     const isShaking = isCurrentRow && shakeRow
+    const isCelebrating = celebrateRow === r
 
     const cells: React.ReactNode[] = []
 
@@ -83,6 +96,11 @@ export function WordGuessBoard({
           }
         } else {
           cellClass = stateColors[guess.states[c]]
+          if (isCelebrating) {
+            animStyle = {
+              animation: `celebrationBounce 500ms ease ${c * 100}ms`,
+            }
+          }
         }
       } else if (isCurrentRow && c < currentGuess.length) {
         letter = currentGuess[c]

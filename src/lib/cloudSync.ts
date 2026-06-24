@@ -62,3 +62,47 @@ export async function syncGameToCloud(userId: string, gameId: GameId) {
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,game_id' })
 }
+
+export async function pushRewardsToCloud(userId: string) {
+  const { getPoints, getUnlocked } = await import('./points')
+  const { getPreferences } = await import('./preferences')
+
+  await supabase.from('user_stats').upsert({
+    user_id: userId,
+    game_id: '_rewards',
+    stats: { points: getPoints(), unlocked: getUnlocked(), preferences: getPreferences() },
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id,game_id' })
+}
+
+export async function pullRewardsFromCloud(userId: string) {
+  const { data } = await supabase
+    .from('user_stats')
+    .select('stats')
+    .eq('user_id', userId)
+    .eq('game_id', '_rewards')
+    .single()
+
+  if (!data?.stats) return
+
+  const cloud = data.stats as { points?: { total: number; balance: number; history: unknown[] }; unlocked?: { themes: string[]; tileSkins: string[]; palettes: string[] } }
+
+  if (cloud.points) {
+    const { getPoints } = await import('./points')
+    const local = getPoints()
+    if (cloud.points.total > local.total) {
+      localStorage.setItem('puzzlehub:points', JSON.stringify(cloud.points))
+    }
+  }
+
+  if (cloud.unlocked) {
+    const { getUnlocked } = await import('./points')
+    const local = getUnlocked()
+    const merged = {
+      themes: [...new Set([...local.themes, ...cloud.unlocked.themes])],
+      tileSkins: [...new Set([...local.tileSkins, ...cloud.unlocked.tileSkins])],
+      palettes: [...new Set([...local.palettes, ...cloud.unlocked.palettes])],
+    }
+    localStorage.setItem('puzzlehub:unlocked', JSON.stringify(merged))
+  }
+}

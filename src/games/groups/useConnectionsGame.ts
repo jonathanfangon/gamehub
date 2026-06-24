@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { pickPuzzle, getTodayKey, getDayIndex } from '../../lib/dailyPuzzle'
 import { getProgress, saveProgress, getStats, saveStats, type GameId } from '../../lib/storage'
+import { calculatePoints, addPoints } from '../../lib/points'
 import type { GroupDef, GroupsPuzzle, Difficulty } from '../../data/groups/puzzles'
 
 const MAX_MISTAKES = 4
@@ -91,6 +92,7 @@ export function useConnectionsGame(gameId: GameId, puzzles: GroupsPuzzle[], shar
   })
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [pointsAwarded, setPointsAwarded] = useState<number | null>(null)
 
   const showToast = useCallback((msg: string, duration = 1500) => {
     setToastMessage(msg)
@@ -185,6 +187,12 @@ export function useConnectionsGame(gameId: GameId, puzzles: GroupsPuzzle[], shar
         const newSolved = [...prev.solvedGroups, ...allRemaining]
         persist(newSolved, [], 0, 'lost')
         finishGame(false, MAX_MISTAKES)
+        const { amount, reason } = calculatePoints(gameId, 'lost', { mistakes: MAX_MISTAKES })
+        if (amount > 0) {
+          addPoints(gameId, amount, reason)
+          setPointsAwarded(amount)
+          setTimeout(() => setPointsAwarded(null), 2000)
+        }
 
         return {
           ...prev, solvedGroups: newSolved, remainingWords: [], selectedWords: new Set(),
@@ -207,7 +215,19 @@ export function useConnectionsGame(gameId: GameId, puzzles: GroupsPuzzle[], shar
       const newStatus: GameStatus = won ? 'won' : 'playing'
 
       persist(newSolved, newRemaining, prev.mistakesLeft, newStatus)
-      if (won) finishGame(true, MAX_MISTAKES - prev.mistakesLeft)
+      if (won) {
+        finishGame(true, MAX_MISTAKES - prev.mistakesLeft)
+        const stats = getStats(gameId)
+        const { amount, reason } = calculatePoints(
+          gameId, 'won',
+          { mistakes: MAX_MISTAKES - prev.mistakesLeft, streak: stats.currentStreak }
+        )
+        if (amount > 0) {
+          addPoints(gameId, amount, reason)
+          setPointsAwarded(amount)
+          setTimeout(() => setPointsAwarded(null), 2000)
+        }
+      }
 
       return {
         ...prev, solvedGroups: newSolved, remainingWords: newRemaining,
@@ -229,7 +249,7 @@ export function useConnectionsGame(gameId: GameId, puzzles: GroupsPuzzle[], shar
     solvedGroups: state.solvedGroups, remainingWords: state.remainingWords,
     selectedWords: state.selectedWords, mistakesLeft: state.mistakesLeft,
     status: state.status, animatingGroup: state.animatingGroup,
-    shaking: state.shaking, oneAway: state.oneAway, toastMessage,
+    shaking: state.shaking, oneAway: state.oneAway, toastMessage, pointsAwarded,
     maxMistakes: MAX_MISTAKES, todayKey: state.todayKey,
     toggleWord, deselectAll, shuffle, submitGuess, onAnimationComplete, generateShareText,
   }

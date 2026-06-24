@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Header } from '../../components/Header'
 import { StatsModal } from '../../components/StatsModal'
+import { Toast, PointsToast } from '../../components/Toast'
+import { Confetti } from '../../components/Confetti'
 import { GroupsBoard } from '../groups/GroupsBoard'
 import { useConnectionsGame } from '../groups/useConnectionsGame'
 import { PUZZLES } from '../../data/nbagroups/puzzles'
@@ -19,13 +21,11 @@ export function NbaGroupsGame() {
   return (
     <div className="flex flex-col min-h-dvh">
       <Header title="NBA Groups" />
+      <Confetti trigger={game.status === 'won'} />
 
       <div className="flex-1 flex flex-col items-center max-w-[430px] mx-auto w-full relative">
-        {game.toastMessage && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 bg-text text-bg px-4 py-2 rounded-lg text-sm font-bold shadow-lg animate-[fadeIn_150ms_ease]">
-            {game.toastMessage}
-          </div>
-        )}
+        <Toast message={game.toastMessage} />
+        <PointsToast amount={game.pointsAwarded} />
 
         <div className="w-full pt-4 text-center mb-3">
           <p className="text-sm text-text-secondary">Find the four NBA-themed groups!</p>
