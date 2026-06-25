@@ -1,163 +1,110 @@
-import type { CellInfo } from './useMathCross'
-import type { Operator } from '../../data/mathcrossword/puzzles'
+import { isNumberCell, isOperatorCell, type CellContent } from '../../data/mathcrossword/puzzles'
+import type { CellState } from './useMathCross'
 
 interface MathCrossBoardProps {
-  getCellInfo: (index: number) => CellInfo
-  getRowEquation: (row: number) => { ops: [Operator, Operator]; result: number }
-  getColEquation: (col: number) => { ops: [Operator, Operator]; result: number }
-  isRowSatisfied: (row: number) => boolean | null
-  isColSatisfied: (col: number) => boolean | null
-  onSelectCell: (index: number) => void
+  grid: CellContent[][]
+  blankSet: Set<string>
+  getCellState: (r: number, c: number) => CellState
+  getCellValue: (r: number, c: number) => CellContent
+  onSelectCell: (r: number, c: number) => void
   won: boolean
 }
 
-const cellStateStyles: Record<string, string> = {
-  empty: 'bg-bg border-border text-text',
-  given: 'bg-bg-secondary border-border-active text-text',
-  editing: 'bg-bg border-border-active text-text',
+const stateStyles: Record<CellState, string> = {
+  neutral: 'bg-bg border-border text-text',
+  given: 'bg-bg-secondary border-border text-text',
+  selected: 'bg-bg border-accent text-text ring-2 ring-accent/30',
   correct: 'bg-correct/15 border-correct text-correct',
-  incorrect: 'bg-[error]/15 border-[error] text-[error]',
+  incorrect: 'bg-error/15 border-error text-error',
 }
 
-function OperatorCell({ op }: { op: Operator }) {
+function NumberCell({
+  value,
+  state,
+  isBlank,
+  onClick,
+  won,
+}: {
+  value: CellContent
+  state: CellState
+  isBlank: boolean
+  onClick: () => void
+  won: boolean
+}) {
+  const displayValue = value != null ? value : ''
+  const style = won ? 'bg-correct/15 border-correct text-correct' : stateStyles[state]
+
   return (
-    <div className="w-[46px] h-[46px] flex items-center justify-center text-[18px] font-bold text-text-secondary">
-      {op === '*' ? '×' : op}
-    </div>
+    <button
+      onClick={onClick}
+      disabled={!isBlank || won}
+      className={`w-[38px] h-[38px] flex items-center justify-center font-bold rounded-md
+        border-2 select-none transition-all duration-150 text-[15px]
+        ${style}
+        ${isBlank && !won ? 'cursor-pointer active:scale-95' : ''}
+        ${!isBlank ? 'cursor-default' : ''}`}
+    >
+      {displayValue}
+    </button>
   )
 }
 
-function EqualsCell() {
+function OperatorCell({ value }: { value: string }) {
+  const display = value === '*' ? '×' : value
   return (
-    <div className="w-[46px] h-[46px] flex items-center justify-center text-[18px] font-bold text-text-secondary">
-      =
-    </div>
-  )
-}
-
-function ResultCell({ value, satisfied }: { value: number; satisfied: boolean | null }) {
-  const color = satisfied === true
-    ? 'text-correct font-bold'
-    : satisfied === false
-      ? 'text-[error] font-bold'
-      : 'text-text font-bold'
-
-  return (
-    <div className={`w-[46px] h-[46px] flex items-center justify-center text-[18px] ${color} rounded-lg bg-bg-secondary`}>
-      {value}
+    <div className="w-[38px] h-[38px] flex items-center justify-center text-[15px] font-bold text-text-secondary">
+      {display}
     </div>
   )
 }
 
 export function MathCrossBoard({
-  getCellInfo,
-  getRowEquation,
-  getColEquation,
-  isRowSatisfied,
-  isColSatisfied,
+  grid,
+  blankSet,
+  getCellState,
+  getCellValue,
   onSelectCell,
   won,
 }: MathCrossBoardProps) {
-  const rows: React.ReactNode[] = []
+  const rows = grid.length
+  const cols = grid[0].length
 
-  for (let r = 0; r < 3; r++) {
-    const eq = getRowEquation(r)
-    const rowSatisfied = isRowSatisfied(r)
-    const cells: React.ReactNode[] = []
+  return (
+    <div className="flex flex-col gap-0.5 items-center">
+      {Array.from({ length: rows }, (_, r) => (
+        <div key={r} className="flex gap-0.5">
+          {Array.from({ length: cols }, (_, c) => {
+            const cell = grid[r][c]
+            const key = `${r},${c}`
 
-    for (let c = 0; c < 3; c++) {
-      const idx = r * 3 + c
-      const info = getCellInfo(idx)
-      const style = cellStateStyles[info.state] ?? cellStateStyles.empty
+            if (cell === null) {
+              return <div key={key} className="w-[38px] h-[38px]" />
+            }
 
-      cells.push(
-        <button
-          key={`cell-${idx}`}
-          onClick={() => onSelectCell(idx)}
-          disabled={info.isGiven || won}
-          className={`w-[46px] h-[46px] flex items-center justify-center text-[22px] font-bold
-            rounded-lg border-2 select-none transition-all duration-150
-            ${style}
-            ${info.state === 'editing' ? 'ring-2 ring-blue-400/50' : ''}
-            ${won ? 'bg-correct/15 border-correct text-correct' : ''}
-          `}
-          style={info.state === 'editing' && info.value !== null ? { animation: 'popIn 100ms ease' } : undefined}
-        >
-          {info.value}
-        </button>,
-      )
+            if (isOperatorCell(cell)) {
+              return <OperatorCell key={key} value={cell} />
+            }
 
-      if (c < 2) {
-        cells.push(<OperatorCell key={`oph-${r}-${c}`} op={eq.ops[c]} />)
-      }
-    }
+            if (isNumberCell(cell)) {
+              const isBlank = blankSet.has(key)
+              const state = getCellState(r, c)
+              const value = getCellValue(r, c)
+              return (
+                <NumberCell
+                  key={key}
+                  value={value}
+                  state={state}
+                  isBlank={isBlank}
+                  onClick={() => onSelectCell(r, c)}
+                  won={won}
+                />
+              )
+            }
 
-    cells.push(<EqualsCell key={`eq-${r}`} />)
-    cells.push(<ResultCell key={`res-${r}`} value={eq.result} satisfied={rowSatisfied} />)
-
-    rows.push(
-      <div key={`row-${r}`} className="flex items-center justify-center gap-1">
-        {cells}
-      </div>,
-    )
-
-    if (r < 2) {
-      const opRow: React.ReactNode[] = []
-      for (let c = 0; c < 3; c++) {
-        const colEq = getColEquation(c)
-        opRow.push(
-          <div key={`opv-${r}-${c}`} className="w-[46px] h-[24px] flex items-center justify-center text-[16px] font-bold text-text-secondary">
-            {colEq.ops[r] === '*' ? '×' : colEq.ops[r]}
-          </div>,
-        )
-        if (c < 2) {
-          opRow.push(<div key={`spacer-${r}-${c}`} className="w-[46px]" />)
-        }
-      }
-      rows.push(
-        <div key={`oprow-${r}`} className="flex items-center justify-center gap-1">
-          {opRow}
-          <div className="w-[46px]" />
-          <div className="w-[46px]" />
-        </div>,
-      )
-    }
-  }
-
-  const equalsRow: React.ReactNode[] = []
-  for (let c = 0; c < 3; c++) {
-    equalsRow.push(
-      <div key={`ceq-${c}`} className="w-[46px] h-[24px] flex items-center justify-center text-[16px] font-bold text-text-secondary">
-        =
-      </div>,
-    )
-    if (c < 2) {
-      equalsRow.push(<div key={`spacer-eq-${c}`} className="w-[46px]" />)
-    }
-  }
-  rows.push(
-    <div key="equals-row" className="flex items-center justify-center gap-1">
-      {equalsRow}
-      <div className="w-[46px]" />
-      <div className="w-[46px]" />
-    </div>,
+            return <div key={key} className="w-[38px] h-[38px]" />
+          })}
+        </div>
+      ))}
+    </div>
   )
-
-  const resultRow: React.ReactNode[] = []
-  for (let c = 0; c < 3; c++) {
-    const colSatisfied = isColSatisfied(c)
-    resultRow.push(<ResultCell key={`cres-${c}`} value={getColEquation(c).result} satisfied={colSatisfied} />)
-    if (c < 2) {
-      resultRow.push(<div key={`spacer-res-${c}`} className="w-[46px]" />)
-    }
-  }
-  rows.push(
-    <div key="result-row" className="flex items-center justify-center gap-1">
-      {resultRow}
-      <div className="w-[46px]" />
-      <div className="w-[46px]" />
-    </div>,
-  )
-
-  return <div className="flex flex-col gap-1 items-center">{rows}</div>
 }

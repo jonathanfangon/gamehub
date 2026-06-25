@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Header } from '../../components/Header'
-import { StatsModal } from '../../components/StatsModal'
-import { Toast, PointsToast } from '../../components/Toast'
+import { GameCompleteModal } from '../../components/GameCompleteModal'
+import { Toast } from '../../components/Toast'
 import { Confetti } from '../../components/Confetti'
 import { MathCrossBoard } from './MathCrossBoard'
 import { useMathCross } from './useMathCross'
@@ -40,56 +40,38 @@ function DifficultySelector({ current, onChange, disabled }: {
   )
 }
 
-function NumberPad({ onNumber, onClear, disabled, usedNumbers, selectedCellValue }: {
+function NumberPad({ onNumber, onClear, disabled }: {
   onNumber: (n: number) => void
   onClear: () => void
   disabled: boolean
-  usedNumbers: Set<number>
-  selectedCellValue: number | null
 }) {
   return (
     <div className="flex flex-col gap-2 items-center">
       <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => {
-          const isUsed = usedNumbers.has(n) && n !== selectedCellValue
-          return (
-            <button
-              key={n}
-              onClick={() => onNumber(n)}
-              disabled={disabled || isUsed}
-              className={`w-[52px] h-[48px] rounded-lg font-bold text-lg
-                active:opacity-80 transition-all select-none
-                ${isUsed
-                  ? 'bg-border/50 text-text-secondary/40 line-through'
-                  : 'bg-key-bg text-key-text'
-                }
-                disabled:opacity-40`}
-            >
-              {n}
-            </button>
-          )
-        })}
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => onNumber(n)}
+            disabled={disabled}
+            className="w-[52px] h-[48px] rounded-lg font-bold text-lg bg-key-bg text-key-text
+              active:opacity-80 transition-all select-none disabled:opacity-40"
+          >
+            {n}
+          </button>
+        ))}
       </div>
       <div className="flex gap-2">
-        {[6, 7, 8, 9].map((n) => {
-          const isUsed = usedNumbers.has(n) && n !== selectedCellValue
-          return (
-            <button
-              key={n}
-              onClick={() => onNumber(n)}
-              disabled={disabled || isUsed}
-              className={`w-[52px] h-[48px] rounded-lg font-bold text-lg
-                active:opacity-80 transition-all select-none
-                ${isUsed
-                  ? 'bg-border/50 text-text-secondary/40 line-through'
-                  : 'bg-key-bg text-key-text'
-                }
-                disabled:opacity-40`}
-            >
-              {n}
-            </button>
-          )
-        })}
+        {[6, 7, 8, 9].map((n) => (
+          <button
+            key={n}
+            onClick={() => onNumber(n)}
+            disabled={disabled}
+            className="w-[52px] h-[48px] rounded-lg font-bold text-lg bg-key-bg text-key-text
+              active:opacity-80 transition-all select-none disabled:opacity-40"
+          >
+            {n}
+          </button>
+        ))}
         <button
           onClick={onClear}
           disabled={disabled}
@@ -105,11 +87,17 @@ function NumberPad({ onNumber, onClear, disabled, usedNumbers, selectedCellValue
 
 export function MathCrossGame() {
   const game = useMathCross()
-  const [showStats, setShowStats] = useState(false)
+  const [showComplete, setShowComplete] = useState(false)
   const stats = getStats('mathcrossword')
-  const showStatsButton = game.status === 'won' && !showStats
+  const won = game.status === 'won'
+  const wasFinishedOnMount = useRef(won)
 
-  const selectedCellValue = game.selectedCell !== null ? game.cells[game.selectedCell] : null
+  useEffect(() => {
+    if (won && !showComplete && !wasFinishedOnMount.current) {
+      const timer = setTimeout(() => setShowComplete(true), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [won, showComplete])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return
@@ -128,35 +116,44 @@ export function MathCrossGame() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  const diffLabel = game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1)
+  const gridRows = game.puzzle.grid.length
+  const sizeLabel = gridRows <= 5 && game.puzzle.grid[0].length <= 5
+    ? 'Small Grid'
+    : gridRows <= 5
+      ? 'Medium Grid'
+      : 'Large Grid'
+
   return (
     <div className="flex flex-col min-h-dvh">
       <Header title="Math Cross" />
-      <Confetti trigger={game.status === 'won'} />
+      <Confetti trigger={won} />
 
       <div className="flex-1 flex flex-col items-center max-w-[430px] mx-auto w-full relative">
         <Toast message={game.toastMessage} />
-        <PointsToast amount={game.pointsAwarded} />
 
         <div className="w-full pt-4 px-4 mb-2">
           <p className="text-sm text-text-secondary text-center mb-3">
-            Place digits 1–9 (each once) to make every equation work
+            Fill in the missing numbers to complete all equations
           </p>
           <DifficultySelector
             current={game.difficulty}
             onChange={game.setDifficulty}
-            disabled={game.status === 'won'}
+            disabled={won}
           />
+          <p className="text-[11px] text-text-secondary text-center mt-2">
+            {sizeLabel} · {game.blankSet.size} cells to fill
+          </p>
         </div>
 
-        <div className="flex-1 flex items-center">
+        <div className="flex-1 flex items-center px-2">
           <MathCrossBoard
-            getCellInfo={game.getCellInfo}
-            getRowEquation={game.getRowEquation}
-            getColEquation={game.getColEquation}
-            isRowSatisfied={game.isRowSatisfied}
-            isColSatisfied={game.isColSatisfied}
+            grid={game.puzzle.grid}
+            blankSet={game.blankSet}
+            getCellState={game.getCellState}
+            getCellValue={game.getCellValue}
             onSelectCell={game.selectCell}
-            won={game.status === 'won'}
+            won={won}
           />
         </div>
 
@@ -173,13 +170,13 @@ export function MathCrossGame() {
             </div>
           )}
 
-          {showStatsButton && (
+          {won && !showComplete && (
             <div className="flex justify-center mb-4">
               <button
-                onClick={() => setShowStats(true)}
+                onClick={() => setShowComplete(true)}
                 className="bg-correct text-white font-bold py-2.5 px-6 rounded-full text-sm active:scale-[0.98] transition-transform"
               >
-                View Stats
+                View Results
               </button>
             </div>
           )}
@@ -188,18 +185,20 @@ export function MathCrossGame() {
             onNumber={game.inputNumber}
             onClear={game.clearCell}
             disabled={game.status !== 'playing' || game.selectedCell === null}
-            usedNumbers={game.usedNumbers}
-            selectedCellValue={selectedCellValue}
           />
         </div>
       </div>
 
-      <StatsModal
-        open={showStats}
-        onClose={() => setShowStats(false)}
-        stats={stats}
+      <GameCompleteModal
+        open={showComplete}
+        onClose={() => setShowComplete(false)}
+        won={true}
         title="Math Cross"
-        shareText={game.status === 'won' ? game.generateShareText() : undefined}
+        message="Perfect!"
+        subtitle={`Solved on ${diffLabel} · ${sizeLabel}`}
+        pointsEarned={game.pointsAwarded ?? 0}
+        stats={stats}
+        shareText={won ? game.generateShareText() : undefined}
       />
     </div>
   )

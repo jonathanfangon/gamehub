@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Header } from '../../components/Header'
-import { StatsModal } from '../../components/StatsModal'
-import { Toast, PointsToast } from '../../components/Toast'
+import { GameCompleteModal } from '../../components/GameCompleteModal'
+import { Toast } from '../../components/Toast'
 import { Confetti } from '../../components/Confetti'
 import { useNbaTrivia } from './useNbaTrivia'
 import { getStats } from '../../lib/storage'
@@ -82,19 +82,35 @@ function ProgressDots({ total, current, allRevealed, allAnswers, correctAnswers 
 
 export function NbaTriviaGame() {
   const game = useNbaTrivia()
-  const [showStats, setShowStats] = useState(false)
+  const [showComplete, setShowComplete] = useState(false)
   const stats = getStats('nbatrivia')
-  const showStatsButton = game.status === 'finished' && !showStats
-  const showConfetti = game.status === 'finished' && game.score >= 3
+  const finished = game.status === 'finished'
+  const won = finished && game.score >= 3
+  const wasFinishedOnMount = useRef(finished)
+
+  useEffect(() => {
+    if (finished && !showComplete && !wasFinishedOnMount.current) {
+      const timer = setTimeout(() => setShowComplete(true), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [finished, showComplete])
+
+  const scoreMessages: Record<number, string> = {
+    5: 'Perfect Score!',
+    4: 'Amazing!',
+    3: 'Nice job!',
+    2: 'Not bad!',
+    1: 'Tough day!',
+    0: 'Better luck tomorrow!',
+  }
 
   return (
     <div className="flex flex-col min-h-dvh">
       <Header title="NBA Trivia" />
-      <Confetti trigger={showConfetti} />
+      <Confetti trigger={won} />
 
       <div className="flex-1 flex flex-col items-center max-w-[430px] mx-auto w-full relative">
         <Toast message={game.toastMessage} />
-        <PointsToast amount={game.pointsAwarded} />
 
         <div className="w-full pt-4 px-4 mb-2">
           <div className="flex items-center justify-between mb-3">
@@ -152,36 +168,29 @@ export function NbaTriviaGame() {
             </div>
           )}
 
-          {game.status === 'finished' && (
-            <div className="text-center mb-4 animate-[countUp_400ms_ease-out]">
-              <p className="text-2xl font-bold mb-1">
-                {game.score >= 4 ? 'Amazing!' : game.score >= 3 ? 'Nice job!' : game.score >= 2 ? 'Not bad!' : 'Better luck tomorrow!'}
-              </p>
-              <p className="text-sm text-text-secondary">
-                You got {game.score} out of {game.totalQuestions} correct
-              </p>
-            </div>
-          )}
-
-          {showStatsButton && (
+          {finished && !showComplete && (
             <div className="flex justify-center">
               <button
-                onClick={() => setShowStats(true)}
+                onClick={() => setShowComplete(true)}
                 className="bg-correct text-white font-bold py-2.5 px-6 rounded-full text-sm active:scale-[0.98] transition-transform"
               >
-                View Stats
+                View Results
               </button>
             </div>
           )}
         </div>
       </div>
 
-      <StatsModal
-        open={showStats}
-        onClose={() => setShowStats(false)}
-        stats={stats}
+      <GameCompleteModal
+        open={showComplete}
+        onClose={() => setShowComplete(false)}
+        won={won}
         title="NBA Trivia"
-        shareText={game.status === 'finished' ? game.generateShareText() : undefined}
+        message={scoreMessages[game.score] ?? 'Game Over'}
+        subtitle={`You got ${game.score} out of ${game.totalQuestions} correct`}
+        pointsEarned={game.pointsAwarded ?? 0}
+        stats={stats}
+        shareText={finished ? game.generateShareText() : undefined}
       />
     </div>
   )

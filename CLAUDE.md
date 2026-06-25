@@ -28,6 +28,7 @@ src/
   components/
     Header.tsx         — back button, title, points badge, stats/settings icons
     Modal.tsx          — backdrop click-to-close + animated card
+    GameCompleteModal.tsx — game completion overlay (auto-shows, animated pts, share, stats)
     StatsModal.tsx     — reusable stats display with share/clipboard button
     Keyboard.tsx       — QWERTY keyboard for Word Guess
     GameIcon.tsx       — custom SVG icons per game
@@ -56,7 +57,7 @@ src/
     wordguess/         — 7 puzzles + valid word set
     groups/            — 12 hand-crafted puzzles
     nbagroups/         — 10 NBA-themed puzzles
-    mathcrossword/     — 10 verified unique-digit puzzles
+    mathcrossword/     — 10 crossword-style math puzzles (small/medium/large grids)
     nbatrivia/         — 10 sets of 5 questions (50 total)
   pages/
     Hub.tsx            — game cards with staggered animations, status pills, countdown timer
@@ -94,15 +95,16 @@ src/
 - Confetti + points on win
 
 ### Math Cross ✅
-- 3x3 number grid using digits 1-9 (each exactly once)
-- Fill empty cells so all row AND column equations are satisfied
-- **Difficulty levels**: Easy (5 given), Medium (3 given), Hard (1 given)
+- **Crossword-style** math puzzle with intersecting equations across and down
+- **Difficulty scales grid complexity**: Easy (5×5, 4 eq), Medium (5×9, 7-8 eq), Hard (9×9, 12 eq)
+- Equations chain together — results of one equation feed into the next
+- Fill missing number cells (1-9) so all equations are satisfied simultaneously
 - Segmented difficulty selector, preference saved in localStorage
-- Number pad shows used/available digits (used numbers greyed out + strikethrough)
-- Check button with correct/incorrect cell highlighting (green/red)
-- Row/column result indicators turn green when satisfied
+- Number pad (1-9), check button with correct/incorrect cell highlighting (green/red)
+- Selected cell highlighting with accent ring
 - **Confetti on win**, points awarded (30/50/80 pts by difficulty)
-- 10 verified puzzles, stats distribution tracks by difficulty level
+- 10 hand-crafted puzzles (4 small, 3 medium, 3 large), daily rotation per difficulty pool
+- Stats distribution tracks by difficulty level
 
 ### NBA Trivia ✅
 - 5 multiple-choice NBA questions per day

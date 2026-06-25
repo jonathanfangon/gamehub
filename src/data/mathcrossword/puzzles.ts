@@ -1,140 +1,215 @@
-export type Operator = '+' | '-'
-
 export type MathDifficulty = 'easy' | 'medium' | 'hard'
 
+export type CellContent = number | string | null
+
 export interface MathCrossPuzzle {
-  // 3x3 grid using digits 1-9, each exactly once.
-  // Row equation: n[r*3] opsH[r*2] n[r*3+1] opsH[r*2+1] n[r*3+2] = rowResults[r]
-  // Col equation: n[c] opsV[c*2] n[c+3] opsV[c*2+1] n[c+6] = colResults[c]
-  numbers: [number, number, number, number, number, number, number, number, number]
-  opsHorizontal: [Operator, Operator, Operator, Operator, Operator, Operator]
-  opsVertical: [Operator, Operator, Operator, Operator, Operator, Operator]
-  rowResults: [number, number, number]
-  colResults: [number, number, number]
-  givenEasy: number[]   // 5 cells shown
-  givenMedium: number[] // 3 cells shown
-  givenHard: number[]   // 1 cell shown
+  id: number
+  grid: CellContent[][]
+  blanks: Record<MathDifficulty, [number, number][]>
 }
 
-export const PUZZLES: MathCrossPuzzle[] = [
+// Small puzzles (5×5, 4-5 equations) — used for Easy difficulty
+const SMALL_PUZZLES: MathCrossPuzzle[] = [
   {
-    // 8+1-3=6  |  5+9-7=7  |  4-6+2=0
-    // col: 8-5+4=7  1+9-6=4  3-7+2=-2
-    numbers: [8, 1, 3, 5, 9, 7, 4, 6, 2],
-    opsHorizontal: ['+', '-', '+', '-', '-', '+'],
-    opsVertical: ['-', '+', '+', '-', '-', '+'],
-    rowResults: [6, 7, 0],
-    colResults: [7, 4, -2],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [0, 4, 8],
-    givenHard: [4],
+    // 6+9=15, 3-1=2, 6×3=18, 9+1=10
+    id: 1,
+    grid: [
+      [6,  '+', 9,  '=', 15],
+      ['×', null, '+', null, null],
+      [3,  '-', 1,  '=', 2],
+      ['=', null, '=', null, null],
+      [18, null, 10, null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2]],
+      medium: [[0,0], [0,2], [2,0], [2,2]],
+      hard:   [[0,0], [0,2], [2,0], [2,2], [2,4]],
+    },
   },
   {
-    // 9-5+2=6  |  3+7-8=2  |  6-4+1=3
-    // col: 9-3+6=12  5+7-4=8  2-8+1=-5
-    numbers: [9, 5, 2, 3, 7, 8, 6, 4, 1],
-    opsHorizontal: ['-', '+', '+', '-', '-', '+'],
-    opsVertical: ['-', '+', '+', '-', '-', '+'],
-    rowResults: [6, 2, 3],
-    colResults: [12, 8, -5],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [2, 4, 6],
-    givenHard: [4],
+    // 7×4=28, 3+5=8, 7-3=4, 4+5=9
+    id: 2,
+    grid: [
+      [7,  '×', 4,  '=', 28],
+      ['-', null, '+', null, null],
+      [3,  '+', 5,  '=', 8],
+      ['=', null, '=', null, null],
+      [4,  null, 9,  null, null],
+    ],
+    blanks: {
+      easy:   [[0,2], [2,0]],
+      medium: [[0,0], [0,2], [2,0], [2,2]],
+      hard:   [[0,0], [0,2], [2,0], [2,2], [0,4]],
+    },
   },
   {
-    // 7+3-6=4  |  2-8+5=-1  |  9+1-4=6
-    // col: 7-2+9=14  3+8-1=10  6-5+4=5
-    numbers: [7, 3, 6, 2, 8, 5, 9, 1, 4],
-    opsHorizontal: ['+', '-', '-', '+', '+', '-'],
-    opsVertical: ['-', '+', '+', '-', '-', '+'],
-    rowResults: [4, -1, 6],
-    colResults: [14, 10, 5],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [0, 4, 8],
-    givenHard: [4],
+    // 9-5=4, 6×2=12, 9+6=15, 5×2=10
+    id: 3,
+    grid: [
+      [9,  '-', 5,  '=', 4],
+      ['+', null, '×', null, null],
+      [6,  '×', 2,  '=', 12],
+      ['=', null, '=', null, null],
+      [15, null, 10, null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2]],
+      medium: [[0,0], [0,2], [2,0], [2,2]],
+      hard:   [[0,0], [0,2], [2,0], [2,2], [0,4]],
+    },
   },
   {
-    // 5-2+9=12  |  1+8-3=6  |  4+6-7=3
-    // col: 5+1-4=2  2-8+6=0  9+3-7=5
-    numbers: [5, 2, 9, 1, 8, 3, 4, 6, 7],
-    opsHorizontal: ['-', '+', '+', '-', '+', '-'],
-    opsVertical: ['+', '-', '-', '+', '+', '-'],
-    rowResults: [12, 6, 3],
-    colResults: [2, 0, 5],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [1, 3, 8],
-    givenHard: [4],
-  },
-  {
-    // 3+8-5=6  |  9-4+1=6  |  6+2-7=1
-    // col: 3-9+6=0  8+4-2=10  5-1+7=11
-    numbers: [3, 8, 5, 9, 4, 1, 6, 2, 7],
-    opsHorizontal: ['+', '-', '-', '+', '+', '-'],
-    opsVertical: ['-', '+', '+', '-', '-', '+'],
-    rowResults: [6, 6, 1],
-    colResults: [0, 10, 11],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [2, 4, 6],
-    givenHard: [4],
-  },
-  {
-    // 4-9+8=3  |  7+3-6=4  |  1-5+2=-2
-    // col: 4+7-1=10  9-3+5=11  8+6-2=12
-    numbers: [4, 9, 8, 7, 3, 6, 1, 5, 2],
-    opsHorizontal: ['-', '+', '+', '-', '-', '+'],
-    opsVertical: ['+', '-', '-', '+', '+', '-'],
-    rowResults: [3, 4, -2],
-    colResults: [10, 11, 12],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [0, 5, 7],
-    givenHard: [4],
-  },
-  {
-    // 6+5-4=7  |  2-1+9=10  |  8+3-7=4
-    // col: 6-2+8=12  5+1-3=3  4-9+7=2
-    numbers: [6, 5, 4, 2, 1, 9, 8, 3, 7],
-    opsHorizontal: ['+', '-', '-', '+', '+', '-'],
-    opsVertical: ['-', '+', '+', '-', '-', '+'],
-    rowResults: [7, 10, 4],
-    colResults: [12, 3, 2],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [1, 3, 8],
-    givenHard: [4],
-  },
-  {
-    // 2+7-4=5  |  6-9+3=0  |  8+5-1=12
-    // col: 2-6+8=4  7+9-5=11  4+3-1=6
-    numbers: [2, 7, 4, 6, 9, 3, 8, 5, 1],
-    opsHorizontal: ['+', '-', '-', '+', '+', '-'],
-    opsVertical: ['-', '+', '+', '-', '+', '-'],
-    rowResults: [5, 0, 12],
-    colResults: [4, 11, 6],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [0, 4, 8],
-    givenHard: [4],
-  },
-  {
-    // 1+4-8=-3  |  5-3+6=8  |  9+7-2=14
-    // col: 1+5-9=-3  4-3+7=8  8+6-2=12
-    numbers: [1, 4, 8, 5, 3, 6, 9, 7, 2],
-    opsHorizontal: ['+', '-', '-', '+', '+', '-'],
-    opsVertical: ['+', '-', '-', '+', '+', '-'],
-    rowResults: [-3, 8, 14],
-    colResults: [-3, 8, 12],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [2, 4, 6],
-    givenHard: [4],
-  },
-  {
-    // 9-6+5=8  |  3+2-1=4  |  7-8+4=3
-    // col: 9+3-7=5  6-2+8=12  5+1-4=2
-    numbers: [9, 6, 5, 3, 2, 1, 7, 8, 4],
-    opsHorizontal: ['-', '+', '+', '-', '-', '+'],
-    opsVertical: ['+', '-', '-', '+', '+', '-'],
-    rowResults: [8, 4, 3],
-    colResults: [5, 12, 2],
-    givenEasy: [0, 2, 4, 6, 8],
-    givenMedium: [1, 4, 7],
-    givenHard: [4],
+    // 4×6=24, 4-2=2, 4+4=8, 6×2=12
+    id: 4,
+    grid: [
+      [4,  '×', 6,  '=', 24],
+      ['+', null, '×', null, null],
+      [4,  '-', 2,  '=', 2],
+      ['=', null, '=', null, null],
+      [8,  null, 12, null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2]],
+      medium: [[0,0], [0,2], [2,0], [2,2]],
+      hard:   [[0,0], [0,2], [2,0], [2,2], [2,4]],
+    },
   },
 ]
+
+// Medium puzzles (5×9, 7-8 equations) — used for Medium difficulty
+const MEDIUM_PUZZLES: MathCrossPuzzle[] = [
+  {
+    // R0: 8+7=15, 15+5=20 | R2: 2×4=8, 8-3=5 | R4: 16-3=13
+    // DC0: 8×2=16 | DC2: 7-4=3 | DC6: 5×3=15
+    id: 5,
+    grid: [
+      [8,  '+', 7,  '=', 15, '+', 5,  '=', 20],
+      ['×', null, '-', null, null, null, '×', null, null],
+      [2,  '×', 4,  '=', 8,  '-', 3,  '=', 5],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [16, '-', 3,  '=', 13, null, 15, null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,6], [0,6]],
+      medium: [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,4], [2,6], [4,0], [4,2]],
+    },
+  },
+  {
+    // R0: 5×3=15, 15-6=9 | R2: 4+1=5, 5×2=10
+    // DC0: 5+4=9 | DC2: 3-1=2 | DC6: 6+2=8
+    id: 6,
+    grid: [
+      [5,  '×', 3,  '=', 15, '-', 6,  '=', 9],
+      ['+', null, '-', null, null, null, '+', null, null],
+      [4,  '+', 1,  '=', 5,  '×', 2,  '=', 10],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [9,  null, 2,  null, null, null, 8,  null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2], [0,6]],
+      medium: [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [2,4], [4,0]],
+    },
+  },
+  {
+    // R0: 12-4=8, 8+3=11 | R2: 3×2=6, 6-1=5
+    // DC0: 12+3=15 | DC2: 4×2=8 | DC6: 3-1=2
+    id: 7,
+    grid: [
+      [12, '-', 4,  '=', 8,  '+', 3,  '=', 11],
+      ['+', null, '×', null, null, null, '-', null, null],
+      [3,  '×', 2,  '=', 6,  '-', 1,  '=', 5],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [15, null, 8,  null, null, null, 2,  null, null],
+    ],
+    blanks: {
+      easy:   [[0,6], [2,0], [2,6]],
+      medium: [[0,2], [0,6], [2,0], [2,2], [2,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [2,4]],
+    },
+  },
+]
+
+// Large puzzles (9×9, 12 equations) — used for Hard difficulty
+const LARGE_PUZZLES: MathCrossPuzzle[] = [
+  {
+    // Top: 6+3=9, 9-2=7, 4-1=3, 3×3=9, DC0:6×4=24, DC2:3+1=4, DC6:2×3=6
+    // R4: 24+4=28 | Bottom: 24-8=16, 4×2=8, 6+3=9 | R6: 8×2=16
+    id: 8,
+    grid: [
+      [6,  '+', 3,  '=', 9,  '-', 2,  '=', 7],
+      ['×', null, '+', null, null, null, '×', null, null],
+      [4,  '-', 1,  '=', 3,  '×', 3,  '=', 9],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [24, '+', 4,  '=', 28, null, 6,  null, null],
+      ['-', null, '×', null, null, null, '+', null, null],
+      [8,  '×', 2,  '=', 16, null, 3,  null, null],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [16, null, 8,  null, null, null, 9,  null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2], [0,6], [6,6]],
+      medium: [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [6,0], [6,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,4], [2,6], [4,0], [4,2], [4,6], [6,0], [6,2], [6,6], [4,4]],
+    },
+  },
+  {
+    // Top: 3×5=15, 15+4=19, 7-2=5, 5×3=15 | DC0:3+7=10, DC2:5-2=3, DC6:4×3=12
+    // R4: 10×3=30 | Bottom: 10-4=6, 3+1=4, 12-8=4 | R6: 4+1=5
+    id: 9,
+    grid: [
+      [3,  '×', 5,  '=', 15, '+', 4,  '=', 19],
+      ['+', null, '-', null, null, null, '×', null, null],
+      [7,  '-', 2,  '=', 5,  '×', 3,  '=', 15],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [10, '×', 3,  '=', 30, null, 12, null, null],
+      ['-', null, '+', null, null, null, '-', null, null],
+      [4,  '+', 1,  '=', 5,  null, 8,  null, null],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [6,  null, 4,  null, null, null, 4,  null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2], [0,6], [6,6]],
+      medium: [[0,0], [0,2], [0,6], [2,2], [2,6], [6,0], [6,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [4,0], [4,2], [6,0], [6,2], [6,6]],
+    },
+  },
+  {
+    // Top: 5+8=13, 13-7=6, 2+3=5, 5×4=20 | DC0:5×2=10, DC2:8-3=5, DC6:7×4=28
+    // R4: 10-5=5 | Bottom: 10+6=16, 5×3=15, 28+2=30 | R6: 6×3=18
+    id: 10,
+    grid: [
+      [5,  '+', 8,  '=', 13, '-', 7,  '=', 6],
+      ['×', null, '-', null, null, null, '×', null, null],
+      [2,  '+', 3,  '=', 5,  '×', 4,  '=', 20],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [10, '-', 5,  '=', 5,  null, 28, null, null],
+      ['+', null, '×', null, null, null, '+', null, null],
+      [6,  '×', 3,  '=', 18, null, 2,  null, null],
+      ['=', null, '=', null, null, null, '=', null, null],
+      [16, null, 15, null, null, null, 30, null, null],
+    ],
+    blanks: {
+      easy:   [[0,0], [2,2], [0,6], [6,6]],
+      medium: [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [6,0], [6,6]],
+      hard:   [[0,0], [0,2], [0,6], [2,0], [2,2], [2,6], [4,0], [4,2], [6,0], [6,2], [6,6]],
+    },
+  },
+]
+
+export function getPuzzlePool(difficulty: MathDifficulty): MathCrossPuzzle[] {
+  switch (difficulty) {
+    case 'easy': return SMALL_PUZZLES
+    case 'medium': return MEDIUM_PUZZLES
+    case 'hard': return LARGE_PUZZLES
+  }
+}
+
+export function isNumberCell(cell: CellContent): cell is number {
+  return typeof cell === 'number'
+}
+
+export function isOperatorCell(cell: CellContent): cell is string {
+  return typeof cell === 'string'
+}
