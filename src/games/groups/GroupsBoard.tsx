@@ -46,7 +46,7 @@ export function GroupsBoard({
   onToggle,
   onAnimationComplete,
 }: GroupsBoardProps) {
-  const animTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const animTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   useEffect(() => {
     if (!animatingGroup) return
@@ -55,7 +55,7 @@ export function GroupsBoard({
       onAnimationComplete()
     }, 600)
 
-    return () => clearTimeout(animTimerRef.current)
+    return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current) }
   }, [animatingGroup, onAnimationComplete])
 
   const animatingWords = animatingGroup ? new Set(animatingGroup.words) : new Set<string>()

@@ -16,7 +16,7 @@ interface GameCompleteModalProps {
 
 function AnimatedPoints({ target }: { target: number }) {
   const [value, setValue] = useState(0)
-  const ref = useRef<number>()
+  const ref = useRef<number>(null)
 
   useEffect(() => {
     if (target <= 0) return
@@ -101,6 +101,8 @@ export function GameCompleteModal({
       <div className="bg-bg rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-[380px] max-h-[85dvh] overflow-y-auto
         animate-[modalSlideUp_350ms_cubic-bezier(0.16,1,0.3,1)]">
         <div className="p-6 text-center">
+          <p className="text-[11px] uppercase tracking-widest text-text-secondary mb-1">{title}</p>
+
           <div className="mb-1">
             <span className="text-4xl">
               {won ? '🎉' : '😔'}

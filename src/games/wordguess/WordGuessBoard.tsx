@@ -28,7 +28,7 @@ export function WordGuessBoard({
   status,
   onRevealComplete,
 }: WordGuessBoardProps) {
-  const revealTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const [revealedCells, setRevealedCells] = useState<Set<string>>(new Set())
   const [celebrateRow, setCelebrateRow] = useState<number | null>(null)
 
@@ -54,7 +54,7 @@ export function WordGuessBoard({
 
     return () => {
       timers.forEach(clearTimeout)
-      clearTimeout(revealTimerRef.current)
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current)
     }
   }, [revealingRow, onRevealComplete, wordLength])
 
